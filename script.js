@@ -91,7 +91,164 @@ const currencies = new Map([
 
 const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
 
+function createUsernames(accs) {
+  accs.forEach(function (acc) {
+    acc.username = acc.owner
+      .toLowerCase()
+      .split(" ")
+      .map(function (name) {
+        return name[0];
+      })
+      .join("");
+  });
+}
+createUsernames(accounts);
+
 const calcDisplayBalance = function (acc) {
   acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
   labelBalance.textContent = `${acc.balance}€`;
 };
+
+console.log("////");
+
+function calcDisplaySummary(acc) {
+  const incomes = acc.movements
+    .filter((movement) => movement > 0)
+    .reduce((accumulator, movement) => accumulator + movement, 0);
+  labelSumIn.textContent = `${incomes}`;
+
+  const out = acc.movements
+    .filter((movement) => movement < 0)
+    .reduce((accumulator, movement) => accumulator + movement, 0);
+  labelSumOut.textContent = `${Math.abs(out)}`;
+
+  const interest = acc.movements
+    .filter((mov) => mov > 0)
+    .map((deposit) => (deposit * acc.interestRate) / 100)
+    .filter((int, index, array) => {
+      // console.log(array);
+      return int >= 1;
+    })
+    .reduce((accumulator, int) => accumulator + int, 0);
+  labelSumInterest.textContent = `${Number.parseFloat(interest).toFixed(2)}`;
+}
+
+let currentAccount;
+function updateUI(currentAccount) {
+  //Display movements
+  displayMovement(currentAccount.movements);
+
+  ///Display balance
+  calcDisplayBalance(currentAccount);
+
+  //Display summary
+  calcDisplaySummary(currentAccount);
+}
+
+btnLogin.addEventListener("click", function (e) {
+  e.preventDefault(); //prevent form from submitting
+  // console.log('LOGIN');
+  // console.log('Event type:', e.type); // Logs 'click'
+  // console.log('Event target:', e.target); // Logs the element that was clicked
+  currentAccount = accounts.find(
+    (acc) => acc.username === inputLoginUsername.value
+  );
+  // console.log(currentAccount);
+
+  if (currentAccount?.pin === Number(inputLoginPin.value)) {
+    //clear input field
+    inputLoginUsername.value = inputLoginPin.value = "";
+    inputLoginPin.blur();
+
+    //Display UI and message
+    labelWelcome.textContent = `Welcome back, ${
+      currentAccount.owner.split(" ")[0]
+    }`;
+    containerApp.style.opacity = 1;
+
+    updateUI(currentAccount);
+    //Display movements
+
+    ///Display balance
+
+    //Display summary
+  }
+});
+
+btnTransfer.addEventListener("click", function (e) {
+  e.preventDefault();
+  const amount = Number(inputTransferAmount.value);
+  const receiverAcc = accounts.find(
+    (acc) => acc.username === inputTransferTo.value
+  );
+  // console.log(amount, receiverAcc);
+  inputTransferAmount.value = inputTransferTo.value = "";
+
+  if (
+    receiverAcc &&
+    amount > 0 &&
+    currentAccount.balance >= amount &&
+    receiverAcc?.username !== currentAccount.username
+  ) {
+    // console.log('Transfer valid');
+
+    //doing the transfer
+    currentAccount.movements.push(-amount);
+    receiverAcc.movements.push(amount);
+
+    //update UI
+    updateUI(currentAccount);
+    //Display movements
+
+    ///Display balance
+
+    //Display summary
+  }
+});
+
+btnLoan.addEventListener("click", function (e) {
+  e.preventDefault();
+
+  const amount = Number(inputLoanAmount.value);
+
+  if (
+    amount > 0 &&
+    currentAccount.movements.some((mov) => mov >= amount * 0.1)
+  ) {
+    //true
+    currentAccount.movements.push(amount);
+
+    //update UI
+    updateUI(currentAccount);
+  }
+
+  inputLoanAmount.value = "";
+});
+
+btnClose.addEventListener("click", function (e) {
+  e.preventDefault();
+  console.log("delete");
+
+  if (
+    Number(inputClosePin.value) === currentAccount.pin &&
+    inputCloseUsername.value === currentAccount.username
+  ) {
+    const index = accounts.findIndex(
+      (acc) => acc.username === currentAccount.username
+    );
+    // accounts.splice(index, 1);
+
+    //delete account
+    accounts.splice(index, 1);
+    //hide UI
+    containerApp.style.opacity = 0;
+  }
+  inputClosePin.value = inputCloseUsername.value = "";
+});
+
+let sortedState = false;
+btnSort.addEventListener("click", function (e) {
+  e.preventDefault();
+  displayMovement(currentAccount.movements, !sortedState);
+  sortedState = !sortedState;
+});
