@@ -73,13 +73,21 @@ const inputClosePin = document.querySelector(".form__input--pin");
 
 function displayMovement(acc, sort = false) {
   containerMovements.innerHTML = "";
-  const movs = sort
-    ? acc.movements.slice().sort((a, b) => a - b)
-    : acc.movements;
-  movs.forEach(function (move, i) {
-    const type = move > 0 ? "deposit" : "withdrawal";
 
-    const date = new Date(acc.movementsDates[i]);
+  const combineMovsDates = acc.movements.map((mov, i) => ({
+    movement: mov,
+    movementDate: acc.movementsDates.at(i),
+  }));
+
+  if (sort) combineMovsDates.sort((a, b) => a.movement - b.movement);
+  // const movs = sort
+  //   ? acc.movements.slice().sort((a, b) => a - b)
+  //   : acc.movements;
+  combineMovsDates.forEach(function (object, i) {
+    const { movement, movementDate } = object;
+    const type = movement > 0 ? "deposit" : "withdrawal";
+
+    const date = new Date(movementDate);
 
     const day = `${date.getDate()}`.padStart(2, 0);
     const month = `${date.getMonth() + 1}`.padStart(2, 0); //start with zero so 1 must be added
@@ -91,7 +99,7 @@ function displayMovement(acc, sort = false) {
     <div class="movements__row">
     <div class="movements__type movements__type--${type}">${i + 1} ${type}</div>
     <div class="movements__date">${displayDate}</div>
-    <div class="movements__value">${move.toFixed(2)}</div>
+    <div class="movements__value">${movement.toFixed(2)}</div>
   </div>
 
     `;
